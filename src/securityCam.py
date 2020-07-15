@@ -110,7 +110,13 @@ class SecurityCam():
     def detectMotion(self):
         video = cv2.VideoCapture(self.webcam) # Default webcam
         time.sleep(1)
-        
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        video = cv2.VideoWriter('data/output.avi', fourcc=fourcc, fps=20,
+                                frameSize=(640,480))
+        video_mask = cv2.VideoWriter('data/output_mask.avi', fourcc=fourcc, fps=20,
+                                    frameSize=(640,480))
+        video_delta = cv2.VideoWriter('data/output_delta.avi', fourcc=fourcc, fps=20,
+                                      frameSize=(640,480))
         first_frame = None # Start-off the program with an empty frame
         process_this_frame = True
         while True:
@@ -123,6 +129,13 @@ class SecurityCam():
             gaussian = cv2.GaussianBlur(gray, (23, 23), 0)
             # Gaussian conversion with a kernel (filter) of 23x23. 
             # The 0 represents the standard deviation of the width and height.
+            # frame = imutils.resize(frame, width=500)
+            frame_delta = cv2.absdiff(first_frame, gaussian)
+            # Abs difference between frames.
+            thresh = cv2.threshold(frame_delta, 25, 255,
+                                    cv2.THRESH_BINARY)[1]
+            
+            dilated_frame = cv2.dilate(thresh, None, iterations=2)
             
             # blurred = cv2.blur(gaussian, (5, 5))
             # Simplify the frame with a kernel of 5x5. 
@@ -139,15 +152,6 @@ class SecurityCam():
                         frame, faces = self.advanced_face_rec(frame)
             
             if faces is False:
-                # frame = imutils.resize(frame, width=500)
-                frame_delta = cv2.absdiff(first_frame, gaussian)
-                # Abs difference between frames.
-                thresh = cv2.threshold(frame_delta, 25, 255,
-                                       cv2.THRESH_BINARY)[1]
-                
-                dilated_frame = cv2.dilate(thresh, None, iterations=2)
-                cv2.imshow('Threshold (foreground mask)', dilated_frame)
-                cv2.imshow('Frame_delta', frame_delta)
                 contours = cv2.findContours(dilated_frame.copy(),
                                             cv2.RETR_EXTERNAL,
                                             cv2.CHAIN_APPROX_SIMPLE)[0]
@@ -186,6 +190,11 @@ class SecurityCam():
                         .strftime('%A %d %B %Y %I:%M:%S%p'),
                         (10, frame.shape[0] - 10), font, 0.35, (0, 0, 255), 1)
 
+            video_out.write(frame)
+            video_mask.write(dilated_frame)
+            video_delta.write(frame_delta)
+            cv2.imshow('Threshold (foreground mask)', dilated_frame)
+            cv2.imshow('Frame_delta', frame_delta)
             cv2.imshow('Security Feed', frame)
             
             

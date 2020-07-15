@@ -11,7 +11,7 @@ import src.face_train as ft
 import src.face_recog as fr
 
 if __name__=='__main__': 
-    # time.sleep(1)
+    time.sleep(5)
     cam = SecurityCam()
     cam.detectMotion()
     # ft.face_train()
